@@ -1,0 +1,1 @@
+spline.d: ../spline.cpp
