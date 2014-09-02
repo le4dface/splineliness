@@ -13,12 +13,31 @@
 using namespace std;
 using namespace glm;
  
+bool drawingSphere = false;
 vector<vec3> cps; //stores the control points
 vector<vec3> spline; //stores all of the points that construct the spline
 
 int windowWidth=800, windowHeight=600;
 int ix = -1; //index
+int splineIndex = 0;
+const float DEG2RAD = 3.14159/180;
 
+void drawCircle(float radius)
+{
+   glPushMatrix();
+   if(cps.size() > 3) {
+	   glTranslatef(spline[splineIndex].x, spline[splineIndex].y,0);
+	   glBegin(GL_POLYGON);
+		   int i=0;
+		   for (; i < 360; i++)
+		   {
+			  float degInRad = i*DEG2RAD;
+			  glVertex2f(cos(degInRad)*radius,sin(degInRad)*radius);
+		   }
+	   glEnd();
+   }
+   glPopMatrix();
+}
 
 
 void calculateSpline() {
@@ -56,11 +75,7 @@ void calculateSpline() {
 }
 
 
-void drawSphere() {
 
-
-
-}
 
 void drawSpline() {
 	glColor3f(0.0, 0.0, 1.0);
@@ -91,6 +106,7 @@ void display(void)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+	drawCircle(0.05);
 	//draw the control points for our CRSpline
 	drawControlPoints();
 	//need at least 4 control points
@@ -156,6 +172,17 @@ void mouse(int button, int state, int xp, int yp)
 void keyboard(unsigned char key, int x, int y)
 {
     if(key == 'c' || key == 'C') cps.clear();
+
+    if(key == 's' || key == 'S') {
+
+    	if(splineIndex <= spline.size()) {
+    		splineIndex++;
+    	} else {
+    		splineIndex = 0;
+    	}
+
+    }
+
     glutPostRedisplay();
 }
 
