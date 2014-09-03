@@ -26,9 +26,13 @@ vector<vec3> cps; //stores the control points
 vector<vec3> spline; //stores all of the points that construct the spline
 
 int windowWidth=800, windowHeight=600;
+
 int ix = -1; //index
 int splineIndex = 0;
 const float DEG2RAD = 3.14159/180;
+
+int window_1;
+int window_2;
 
 vec3 findWorldCoordinates(int,int);
 void drawCircle(float);
@@ -39,6 +43,15 @@ void drawControlPoints();
 void display();
 int selectPoint(float, float);
 void mouseDrag(int, int);
+
+
+/*
+ * Velocity curve window
+ */
+
+void reshape_alt(int, int);
+void display_alt();
+
 
 
 void drawCircle(float radius)
@@ -74,6 +87,7 @@ void G308_SetLight() {
 void calculateSpline() {
 
 if(cps.size() > 3) {
+
 	for (vector<vec3>::size_type i = 1; i != cps.size() - 2; i++) {
 		for (int k = 0; k < 50; k++) {
 			//50 points
@@ -96,8 +110,10 @@ if(cps.size() > 3) {
 			splinePoint.z = -1;
 
 			spline.push_back(splinePoint);
+
 		}
 	}
+
 }
 
 }
@@ -154,7 +170,7 @@ void display(void)
 	glDisable(GL_LIGHTING);
 	glDisable(GL_COLOR_MATERIAL);
 
-//	glutSwapBuffers();
+	glutSwapBuffers();
 	glFlush();
 }
 
@@ -288,6 +304,18 @@ void reshape(int wid, int hgt)
 	glViewport(0, 0, wid, hgt);
 }
 
+/*
+ * Velocity curve window callbacks
+ */
+
+void reshape_alt(int wid, int hgt) {
+
+}
+
+void display_alt() {
+
+}
+
 
 int main(int argc, char **argv)
 { 
@@ -296,10 +324,10 @@ int main(int argc, char **argv)
 	cameraPosition.z = 0;
 
 	glutInit(&argc, argv);            
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);  
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitWindowPosition(0,0);
-	glutCreateWindow("CRSpline biz");
+	window_1 = glutCreateWindow("CRSpline biz");
 	G308_SetLight();
 	initialize();
 	glutDisplayFunc(display);
@@ -307,6 +335,12 @@ int main(int argc, char **argv)
 	glutMouseFunc(mouse);
 	glutMotionFunc(mouseDrag);
     glutKeyboardFunc(keyboard);
+
+    window_2 = glutCreateWindow("Velocity biz");
+    initialize();
+    glutDisplayFunc(display_alt);
+    glutReshapeFunc(reshape_alt);
+
 	glutMainLoop(); 
 	return 0;
 }
