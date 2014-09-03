@@ -10,9 +10,17 @@
 #include <GL/glut.h>
 #include <vector>
 #include <glm/glm.hpp>
+// My definition
+#include "include/define.h"
+#include "include/G308_Geometry.h"
+
 using namespace std;
 using namespace glm;
- 
+
+vec3 cameraPosition;
+
+float zoomFactor = 10;
+
 bool drawingSphere = false;
 vector<vec3> cps; //stores the control points
 vector<vec3> spline; //stores all of the points that construct the spline
@@ -22,23 +30,46 @@ int ix = -1; //index
 int splineIndex = 0;
 const float DEG2RAD = 3.14159/180;
 
+vec3 findWorldCoordinates(int,int);
+void drawCircle(float);
+void G308_SetLight();
+void drawSpline();
+void calculateSpline();
+void drawControlPoints();
+void display();
+int selectPoint(float, float);
+void mouseDrag(int, int);
+
+
 void drawCircle(float radius)
 {
+
+
    glPushMatrix();
-   if(cps.size() > 3) {
-	   glTranslatef(spline[splineIndex].x, spline[splineIndex].y,0);
-	   glBegin(GL_POLYGON);
-		   int i=0;
-		   for (; i < 360; i++)
-		   {
-			  float degInRad = i*DEG2RAD;
-			  glVertex2f(cos(degInRad)*radius,sin(degInRad)*radius);
-		   }
-	   glEnd();
-   }
+	   if(cps.size() > 3) {
+
+
+		   glTranslatef(spline[splineIndex].x, spline[splineIndex].y, -1);
+
+		   glutSolidSphere(0.03,100,100);
+
+	   }
+
+
    glPopMatrix();
 }
+// Set View Position
+void G308_SetLight() {
+	float direction[] = { 200, 200, -10.0f, 1.0f };
+	float diffintensity[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	float ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
 
+	glLightfv(GL_LIGHT0, GL_POSITION, direction);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffintensity);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+
+	glEnable(GL_LIGHT0);
+}
 
 void calculateSpline() {
 
@@ -63,7 +94,7 @@ void calculateSpline() {
 
 				splinePoint.x = splineX;
 				splinePoint.y = splineY;
-				splinePoint.z = 0;
+				splinePoint.z = -1;
 
 				spline.push_back(splinePoint);
 
@@ -74,15 +105,12 @@ void calculateSpline() {
 
 }
 
-
-
-
 void drawSpline() {
 	glColor3f(0.0, 0.0, 1.0);
 	glBegin(GL_LINE_STRIP);
 	for (vector<vec3>::size_type i = 0; i != spline.size(); i++) {
 
-		glVertex3f(spline[i].x, spline[i].y, 0);
+		glVertex3f(spline[i].x, spline[i].y, -1);
 
 	}
 	glEnd();
@@ -90,11 +118,11 @@ void drawSpline() {
 
 void drawControlPoints() {
 	//draw the control points for our CRSpline
-	glPointSize(6.0);
+	glPointSize(10.0);
 	glColor3f(1.0, 0.0, 1.0);
 	glBegin(GL_POINTS);
 	for (vector<vec3>::size_type i = 0; i != cps.size(); i++) {
-		glVertex3f(cps[i].x, cps[i].y, 0);
+		glVertex3f(cps[i].x, cps[i].y, -1);
 	}
 	glEnd();
 }
@@ -102,11 +130,19 @@ void drawControlPoints() {
 void display(void) 
 {
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_NORMALIZE); //enabled GL normalize to automagically normalize vectors
+	glEnable(GL_LIGHTING);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+	glColor3f(1.0f,0.0f,0.0f); /* set object color as red */
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 64.0f );
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	drawCircle(0.05);
+	drawCircle(0.01);
 	//draw the control points for our CRSpline
 	drawControlPoints();
 	//need at least 4 control points
@@ -114,12 +150,20 @@ void display(void)
 	{
 		drawSpline();
 	}
-	glFlush(); 
+
+
+	glDisable(GL_NORMALIZE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_COLOR_MATERIAL);
+
+	glutSwapBuffers();
+	glFlush();
 }
 
 
 /*
- * find the index of selected point
+ * find the index of selected point # NO LONG WORKS IN 3D SPACE
  */
 int selectPoint(float xp, float yp)
 {
@@ -131,14 +175,15 @@ int selectPoint(float xp, float yp)
 	return -1;
 }
 
-
 void mouseDrag(int xp, int yp) {
-	float xScene = (float)(xp*8.0)/windowWidth;
-	float yScene = (float)(windowHeight-yp)*6.0/windowHeight;
+
+	vec3 worldCoords = findWorldCoordinates(xp,yp);
+
 	if(ix > -1)
     {
-		cps[ix].x = xScene;
-		cps[ix].y = yScene;
+		cps[ix].x = worldCoords.x;
+		cps[ix].y = worldCoords.y;
+		cps[ix].z = -1;
 
 		spline.clear();
 		calculateSpline();
@@ -146,17 +191,50 @@ void mouseDrag(int xp, int yp) {
 	glutPostRedisplay();
 }
 
+vec3 findWorldCoordinates(int xp, int yp) {
+
+	GLint viewport[4]; //var to hold the viewport info
+	GLdouble modelview[16]; //var to hold the modelview info
+	GLdouble projection[16]; //var to hold the projection matrix info
+	GLfloat winX, winY, winZ; //variables to hold screen x,y,z coordinates
+	GLdouble worldX, worldY, worldZ; //variables to hold world x,y,z coordinates
+
+	glGetDoublev( GL_MODELVIEW_MATRIX, modelview ); //get the modelview info
+	glGetDoublev( GL_PROJECTION_MATRIX, projection ); //get the projection matrix info
+	glGetIntegerv( GL_VIEWPORT, viewport ); //get the viewport info
+
+	winX = (float)xp;
+	winY = (float)(viewport[3] - (float)yp);
+	winZ = 0;
+
+	//get the world coordinates from the screen coordinates
+	gluUnProject( winX, winY, winZ, modelview, projection, viewport, &worldX, &worldY, &worldZ);
+
+	vec3 world;
+	world.x = worldX; world.y = worldY; world.z = worldZ;
+
+	return world;
+
+}
+
 void mouse(int button, int state, int xp, int yp)
 {
-	float xScene = (float)(xp*8.0)/windowWidth;
-	float yScene = (float)(windowHeight-yp)*6.0/windowHeight;
+	if(button == 3) { //wheel up
+			zoomFactor *= 1.1;
+	} else if(button == 4) { //wheel down
+			zoomFactor *= 0.9;
+	}
+	printf("x: %d, y: %d\n", xp, yp);
+
+	vec3 worldCoords = findWorldCoordinates(xp,yp);
+
 	if(button==GLUT_LEFT_BUTTON && state ==GLUT_DOWN)
 	{
 
 		   vec3 newPoint;
-		   newPoint.x = xScene;
-		   newPoint.y = yScene;
-		   newPoint.z = 0;
+		   newPoint.x = (float)worldCoords.x;
+		   newPoint.y = (float)worldCoords.y;
+		   newPoint.z = (float)worldCoords.z;
 		   cps.push_back(newPoint);
 		   //recalculate the spline as it has new points
 		   spline.clear();
@@ -164,10 +242,9 @@ void mouse(int button, int state, int xp, int yp)
 
 	} 
 	else if(button==GLUT_RIGHT_BUTTON && state ==GLUT_DOWN)  //Pick
-			ix = selectPoint(xScene, yScene);
+			ix = selectPoint((float)worldCoords.x, (float)worldCoords.y);
 	glutPostRedisplay();
 }
-
 
 void keyboard(unsigned char key, int x, int y)
 {
@@ -188,12 +265,24 @@ void keyboard(unsigned char key, int x, int y)
 
 void initialize(void)
 {
-	glClearColor(1.0, 1.0, 1.0, 0.0); 
+
+
+
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluOrtho2D(0.0, 8.0, 0.0, 6.0);
-}
+	gluPerspective(G308_FOVY, (double) windowWidth / (double) windowHeight, G308_ZNEAR_3D, G308_ZFAR_3D);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
+
+	gluLookAt(
+			cameraPosition.x,
+			cameraPosition.y,
+			cameraPosition.z,
+			cameraPosition.x,
+			cameraPosition.y,
+			cameraPosition.z - zoomFactor, 0.0, 1.0, 0.0);
+}
 
 void reshape(int wid, int hgt)
 {
@@ -205,11 +294,16 @@ void reshape(int wid, int hgt)
 
 int main(int argc, char **argv)
 { 
+	cameraPosition.x = 0;
+	cameraPosition.y = 0;
+	cameraPosition.z = 0;
+
 	glutInit(&argc, argv);            
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);  
 	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitWindowPosition(0,0);
 	glutCreateWindow("CRSpline biz");
+	G308_SetLight();
 	initialize();
 	glutDisplayFunc(display);
     glutReshapeFunc(reshape);
