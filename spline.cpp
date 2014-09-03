@@ -73,35 +73,32 @@ void G308_SetLight() {
 
 void calculateSpline() {
 
-	if(cps.size() > 3) {
-
+if(cps.size() > 3) {
 	for (vector<vec3>::size_type i = 1; i != cps.size() - 2; i++) {
-			for (int k = 0; k < 50; k++) {
-				//50 points
-				float t = k * 0.02; //Interpolation parameter
-				float splineX, splineY;
-				vec3 splinePoint;
+		for (int k = 0; k < 50; k++) {
+			//50 points
+			float t = k * 0.02; //Interpolation parameter
+			float splineX, splineY;
+			vec3 splinePoint;
 
-				splineX =
-					  cps[i].x + 0.5 * t * (-cps[i - 1].x + cps[i + 1].x) +
-					  pow(t,2) * (cps[i - 1].x - 2.5 * cps[i].x + 2 * cps[i + 1].x - 0.5 * cps[i + 2].x) +
-					  pow(t,3) * (-0.5 * cps[i - 1].x + 1.5 * cps[i].x - 1.5 * cps[i + 1].x + 0.5 * cps[i + 2].x);
+			splineX =
+				  cps[i].x + 0.5 * t * (-cps[i - 1].x + cps[i + 1].x) +
+				  pow(t,2) * (cps[i - 1].x - 2.5 * cps[i].x + 2 * cps[i + 1].x - 0.5 * cps[i + 2].x) +
+				  pow(t,3) * (-0.5 * cps[i - 1].x + 1.5 * cps[i].x - 1.5 * cps[i + 1].x + 0.5 * cps[i + 2].x);
 
-				splineY =
-						cps[i].y + 0.5 * t * (-cps[i - 1].y + cps[i + 1].y) +
-						pow(t,2) * (cps[i - 1].y - 2.5 * cps[i].y + 2 * cps[i + 1].y - 0.5 * cps[i + 2].y) +
-						pow(t,3) * (-0.5 * cps[i - 1].y + 1.5 * cps[i].y - 1.5 * cps[i + 1].y + 0.5 * cps[i + 2].y);
+			splineY =
+					cps[i].y + 0.5 * t * (-cps[i - 1].y + cps[i + 1].y) +
+					pow(t,2) * (cps[i - 1].y - 2.5 * cps[i].y + 2 * cps[i + 1].y - 0.5 * cps[i + 2].y) +
+					pow(t,3) * (-0.5 * cps[i - 1].y + 1.5 * cps[i].y - 1.5 * cps[i + 1].y + 0.5 * cps[i + 2].y);
 
-				splinePoint.x = splineX;
-				splinePoint.y = splineY;
-				splinePoint.z = -1;
+			splinePoint.x = splineX;
+			splinePoint.y = splineY;
+			splinePoint.z = -1;
 
-				spline.push_back(splinePoint);
-
-			}
+			spline.push_back(splinePoint);
+		}
 	}
-
-	}
+}
 
 }
 
@@ -157,7 +154,7 @@ void display(void)
 	glDisable(GL_LIGHTING);
 	glDisable(GL_COLOR_MATERIAL);
 
-	glutSwapBuffers();
+//	glutSwapBuffers();
 	glFlush();
 }
 
