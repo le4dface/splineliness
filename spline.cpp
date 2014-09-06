@@ -24,9 +24,11 @@ float zoomFactor = 10;
 bool drawingSphere = false;
 vector<vec3> cps; //stores the control points
 vector<vec3> spline; //stores all of the points that construct the spline
+vector<vec3> vps; //store control points for velocity curve
+vector<vec3> vspline; //store all of the points that construct the velocity spline
 
 int windowWidth = 800, windowHeight = 600;
-static int view_state = 0;
+//static int view_state = 0;
 
 int ix = -1; //index
 int splineIndex = 0;
@@ -77,6 +79,20 @@ void G308_SetLight() {
 
 	glEnable(GL_LIGHT0);
 }
+
+
+void G308_SetLight_2() {
+	float direction[] = { 200, 200, -10.0f, 1.0f };
+	float diffintensity[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	float ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
+
+	glLightfv(GL_LIGHT1, GL_POSITION, direction);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffintensity);
+	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient);
+
+	glEnable(GL_LIGHT1);
+}
+
 
 void calculateSpline() {
 
@@ -140,6 +156,19 @@ void drawControlPoints() {
 		glVertex3f(cps[i].x, cps[i].y, -1);
 	}
 	glEnd();
+}
+
+void drawVelocityPoints() {
+
+	//draw the control points for our CRSpline
+	glPointSize(10.0);
+	glColor3f(1.0, 0.0, 1.0);
+	glBegin(GL_POINTS);
+	for (vector<vec3>::size_type i = 0; i != vps.size(); i++) {
+		glVertex2f(vps[i].x, vps[i].y);
+	}
+	glEnd();
+
 }
 
 void display(void) {
@@ -255,6 +284,29 @@ void mouse(int button, int state, int xp, int yp) {
 	glutPostRedisplay();
 }
 
+void mouse_2(int button, int state, int xp, int yp) {
+
+
+	float xWorld = (float)(xp*8.0)/windowWidth;
+	float yWorld = (float)(windowHeight-yp)*6.0/windowHeight;
+	if(button==GLUT_LEFT_BUTTON && state ==GLUT_DOWN)
+	{
+
+		   vec3 newPoint;
+		   newPoint.x = xWorld;
+		   newPoint.y = yWorld;
+		   vps.push_back(newPoint);
+
+	}
+//	else if(button==GLUT_RIGHT_BUTTON && state ==GLUT_DOWN)  //Pick
+//			indx = picked(xWorld, yWorld);
+	glutPostRedisplay();
+
+	printf("x: %d, y: %d\n", xp, yp);
+
+}
+
+
 void keyboard(unsigned char key, int x, int y) {
 	if (key == 'c' || key == 'C')
 		cps.clear();
@@ -286,6 +338,16 @@ void initialize(void) {
 			0.0, 1.0, 0.0);
 }
 
+void initialize_2(void) {
+
+	glClearColor(1.0, 1.0, 1.0, 0.0);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0.0, 8.0, 0.0, 6.0);
+
+}
+
+
 void reshape(int wid, int hgt) {
 	windowWidth = wid;
 	windowHeight = hgt;
@@ -316,8 +378,7 @@ void display_alt() {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		glTranslatef(0,0,-1);
-		glutSolidSphere(1, 100, 100);
+		drawVelocityPoints();
 
 		glDisable(GL_NORMALIZE);
 		glDisable(GL_DEPTH_TEST);
@@ -348,9 +409,12 @@ int main(int argc, char **argv) {
 	glutKeyboardFunc(keyboard);
 
 	window_2 = glutCreateWindow("Velocity biz");
-	initialize();
+	G308_SetLight_2();
+	initialize_2();
 	glutDisplayFunc(display_alt);
 	glutReshapeFunc(reshape_alt);
+	glutMouseFunc(mouse_2);
+
 
 	glutMainLoop();
 	return 0;
