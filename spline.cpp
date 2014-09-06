@@ -137,6 +137,7 @@ void kinematics() {
 		float d = distList[i];
 		float uValue = u;
 
+		//todo look hard at this and think about how jono has done this
 		//store to map between u and distance
 		uList.push_back(uValue);
 
@@ -164,7 +165,27 @@ void splineLength() {
 	splineLen = totalLength;
 }
 
+vec3 calculateCMRPoint(vec3 a, vec3 b, vec3 c, vec3 d, float t) {
 
+	float splineX, splineY;
+	vec3 splinePoint;
+
+	splineX =
+			b.x + 0.5 * t * (-a.x + c.x) +
+			pow(t, 2) * (a.x - 2.5 * b.x + 2 * c.x - 0.5 * d.x) +
+			pow(t, 3) * (-0.5 * a.x + 1.5 * b.x - 1.5 * c.x + 0.5 * d.x);
+
+	splineY = b.y + 0.5 * t * (-a.y + c.y)
+			+ pow(t, 2) * (a.y - 2.5 * b.y + 2 * c.y - 0.5 * d.y)
+			+ pow(t, 3) * (-0.5 * a.y + 1.5 * b.y - 1.5 * c.y + 0.5 * d.y);
+
+	splinePoint.x = splineX;
+	splinePoint.y = splineY;
+	splinePoint.z = -1;
+
+	return splinePoint;
+
+}
 
 void calculateSpline() {
 
@@ -175,29 +196,8 @@ void calculateSpline() {
 				//50 points
 				float t = k * 0.02; //Interpolation parameter
 				float splineX, splineY;
-				vec3 splinePoint;
 
-				splineX = cps[i].x + 0.5 * t * (-cps[i - 1].x + cps[i + 1].x)
-						+ pow(t, 2)
-								* (cps[i - 1].x - 2.5 * cps[i].x
-										+ 2 * cps[i + 1].x - 0.5 * cps[i + 2].x)
-						+ pow(t, 3)
-								* (-0.5 * cps[i - 1].x + 1.5 * cps[i].x
-										- 1.5 * cps[i + 1].x
-										+ 0.5 * cps[i + 2].x);
-
-				splineY = cps[i].y + 0.5 * t * (-cps[i - 1].y + cps[i + 1].y)
-						+ pow(t, 2)
-								* (cps[i - 1].y - 2.5 * cps[i].y
-										+ 2 * cps[i + 1].y - 0.5 * cps[i + 2].y)
-						+ pow(t, 3)
-								* (-0.5 * cps[i - 1].y + 1.5 * cps[i].y
-										- 1.5 * cps[i + 1].y
-										+ 0.5 * cps[i + 2].y);
-
-				splinePoint.x = splineX;
-				splinePoint.y = splineY;
-				splinePoint.z = -1;
+				vec3 splinePoint = calculateCMRPoint(cps[i-1], cps[i], cps[i+1], cps[i+2], t);
 
 				spline.push_back(splinePoint);
 
