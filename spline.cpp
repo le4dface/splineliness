@@ -10,9 +10,11 @@
 #include <GL/glut.h>
 #include <vector>
 #include <glm/glm.hpp>
+#include <map>
 // My definition
 #include "include/define.h"
 #include "include/G308_Geometry.h"
+//#include "include/pointList.h"
 
 using namespace std;
 using namespace glm;
@@ -29,11 +31,8 @@ vector<vec3> vps; //store control points for velocity curve
 vector<vec3> vspline; //store all of the points that construct the velocity spline
 
 vector<float> distList;
+vector<float> uList;
 
-float startTime = 0.0f;
-float endTime = 1.0f;
-
-float deltaTime = 0.01f;
 
 float splineLen= 0.0f;
 
@@ -131,25 +130,26 @@ void kinematics() {
 	printf("u_inc: %f\n", u_inc);
 
 
-	for (vector<vec3>::size_type i = 0; i != distList.size(); i+=2) {
+	for (vector<vec3>::size_type i = 0; i != distList.size(); i++) {
 
 		//add distList[i], add u
 		int index = i;
-		float distance = distList[i];
+		float d = distList[i];
 		float uValue = u;
 
-		//store to map between distance and u
-
-
-
+		//store to map between u and distance
+		uList.push_back(uValue);
 
 		//increment u
 		u+=u_inc;
+
 	}
 
 	//tuple { index, u, arc_length }
 
 }
+
+
 
 void splineLength() {
 
