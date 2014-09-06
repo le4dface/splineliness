@@ -24,9 +24,20 @@ float zoomFactor = 10;
 bool drawingSphere = false;
 vector<vec3> cps; //stores the control points
 vector<vec3> spline; //stores all of the points that construct the spline
+
 vector<vec3> vps; //store control points for velocity curve
 vector<vec3> vspline; //store all of the points that construct the velocity spline
 
+vector<float> distList;
+
+float startTime = 0.0f;
+float endTime = 1.0f;
+
+float deltaTime = 0.01f;
+
+float splineLen= 0.0f;
+
+int numPoints = 50;
 int windowWidth = 800, windowHeight = 600;
 //static int view_state = 0;
 
@@ -47,12 +58,15 @@ void display();
 int selectPoint(float, float);
 void mouseDrag(int, int);
 
+void splineLength();
+
 /*
  * Velocity curve window
  */
 
 void reshape_alt(int, int);
 void display_alt();
+//void calculateArcLength();
 
 void drawCircle(float radius) {
 
@@ -93,13 +107,71 @@ void G308_SetLight_2() {
 	glEnable(GL_LIGHT1);
 }
 
+float calculateDist(int startIndx, int endIndx) {
+
+	vec3 pos1 = spline[startIndx]; // start position
+	vec3 pos2 = spline[endIndx]; // end position
+
+	float deltaX = pos2.x - pos1.x;
+	float deltaY = pos2.y - pos1.y;
+
+	float dist = sqrt(pow(deltaX,2) + pow(deltaY,2));
+
+	return dist;
+
+}
+
+void kinematics() {
+
+	//divide distance by number of segments
+	splineLength();
+	int num_segments = spline.size() - 1;
+	float u = 0; //initial u
+	float u_inc = float(splineLen/(num_segments));
+	printf("u_inc: %f\n", u_inc);
+
+
+	for (vector<vec3>::size_type i = 0; i != distList.size(); i+=2) {
+
+		//add distList[i], add u
+		int index = i;
+		float distance = distList[i];
+		float uValue = u;
+
+		//store to map between distance and u
+
+
+
+
+		//increment u
+		u+=u_inc;
+	}
+
+	//tuple { index, u, arc_length }
+
+}
+
+void splineLength() {
+
+	float totalLength = 0;
+	distList.clear(); //clear before recalculating
+	distList.push_back(totalLength);
+
+	for (vector<vec3>::size_type i = 0; i != spline.size(); i+=2) {
+		totalLength += calculateDist(i,i+1);
+		distList.push_back(totalLength);
+	}
+	splineLen = totalLength;
+}
+
+
 
 void calculateSpline() {
 
 	if (cps.size() > 3) {
 
 		for (vector<vec3>::size_type i = 1; i != cps.size() - 2; i++) {
-			for (int k = 0; k < 50; k++) {
+			for (int k = 0; k < numPoints; k++) {
 				//50 points
 				float t = k * 0.02; //Interpolation parameter
 				float splineX, splineY;
@@ -137,6 +209,8 @@ void calculateSpline() {
 }
 
 void drawSpline() {
+
+//	printf("%d", spline.size());
 	glColor3f(0.0, 0.0, 1.0);
 	glBegin(GL_LINE_STRIP);
 	for (vector<vec3>::size_type i = 0; i != spline.size(); i++) {
@@ -318,8 +392,15 @@ void keyboard(unsigned char key, int x, int y) {
 		} else {
 			splineIndex = 0;
 		}
-
 	}
+
+	if(key == 'l' || key == 'L') {
+		splineLength();
+		printf("spline length: %f\n\n", splineLen);
+		kinematics();
+	}
+
+
 
 	glutPostRedisplay();
 }
