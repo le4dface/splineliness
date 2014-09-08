@@ -33,6 +33,8 @@ vector<vec3> vspline; //store all of the points that construct the velocity spli
 vector<float> distList;
 vector<float> uList;
 
+int xAxisOff = 20;
+int yAxisOff = 20;
 
 float splineLen= 0.0f;
 
@@ -52,12 +54,13 @@ void drawCircle(float);
 void G308_SetLight();
 void drawSpline();
 void calculateSpline();
+vec3 calculateCMRPoint(vec3, vec3, vec3, vec3, float);
 void drawControlPoints();
 void display();
 int selectPoint(float, float);
 void mouseDrag(int, int);
+void initialize_vps();
 
-void splineLength();
 
 /*
  * Velocity curve window
@@ -106,64 +109,13 @@ void G308_SetLight_2() {
 	glEnable(GL_LIGHT1);
 }
 
-float calculateDist(int startIndx, int endIndx) {
-
-	vec3 pos1 = spline[startIndx]; // start position
-	vec3 pos2 = spline[endIndx]; // end position
-
-	float deltaX = pos2.x - pos1.x;
-	float deltaY = pos2.y - pos1.y;
-
-	float dist = sqrt(pow(deltaX,2) + pow(deltaY,2));
-
-	return dist;
-
-}
-
-void kinematics() {
-
-	//divide distance by number of segments
-	splineLength();
-	int num_segments = spline.size() - 1;
-	float u = 0; //initial u
-	float u_inc = float(splineLen/(num_segments));
-	printf("u_inc: %f\n", u_inc);
-
-
-	for (vector<vec3>::size_type i = 0; i != distList.size(); i++) {
-
-		//add distList[i], add u
-		int index = i;
-		float d = distList[i];
-		float uValue = u;
-
-		//todo look hard at this and think about how jono has done this
-		//store to map between u and distance
-		uList.push_back(uValue);
-
-		//increment u
-		u+=u_inc;
-
-	}
-
-	//tuple { index, u, arc_length }
-
-}
 
 
 
-void splineLength() {
 
-	float totalLength = 0;
-	distList.clear(); //clear before recalculating
-	distList.push_back(totalLength);
 
-	for (vector<vec3>::size_type i = 0; i != spline.size(); i+=2) {
-		totalLength += calculateDist(i,i+1);
-		distList.push_back(totalLength);
-	}
-	splineLen = totalLength;
-}
+
+
 
 vec3 calculateCMRPoint(vec3 a, vec3 b, vec3 c, vec3 d, float t) {
 
@@ -187,6 +139,27 @@ vec3 calculateCMRPoint(vec3 a, vec3 b, vec3 c, vec3 d, float t) {
 
 }
 
+
+void calculateVelSpline() {
+
+	if (vps.size() > 3) {
+
+		for (vector<vec3>::size_type i = 1; i != vps.size() - 2; i++) {
+			for (int k = 0; k < numPoints; k++) {
+				//50 points
+				float t = k * 0.02; //Interpolation parameter
+
+				vec3 splinePoint = calculateCMRPoint(vps[i-1], vps[i], vps[i+1], vps[i+2], t);
+
+				vspline.push_back(splinePoint);
+
+			}
+		}
+
+	}
+
+}
+
 void calculateSpline() {
 
 	if (cps.size() > 3) {
@@ -195,7 +168,6 @@ void calculateSpline() {
 			for (int k = 0; k < numPoints; k++) {
 				//50 points
 				float t = k * 0.02; //Interpolation parameter
-				float splineX, splineY;
 
 				vec3 splinePoint = calculateCMRPoint(cps[i-1], cps[i], cps[i+1], cps[i+2], t);
 
@@ -221,6 +193,38 @@ void drawSpline() {
 	glEnd();
 }
 
+void drawVelSpline() {
+
+//	printf("%d", spline.size());
+	glColor3f(0.0, 0.0, 1.0);
+	glBegin(GL_LINE_STRIP);
+	for (vector<vec3>::size_type i = 0; i != vspline.size(); i++) {
+
+		glVertex2f(vspline[i].x, vspline[i].y);
+
+	}
+	glEnd();
+}
+
+
+/*
+ * For calculating the chord length of an arc
+ */
+float calculateDist(int indx, int nextIndx) {
+
+	vec3 pos1 = cps[indx]; // start position
+	vec3 pos2 = cps[nextIndx]; // end position
+
+	float deltaX = pos2.x - pos1.x;
+	float deltaY = pos2.y - pos1.y;
+
+	float dist = sqrt(pow(deltaX,2) + pow(deltaY,2));
+
+	return dist;
+
+}
+
+
 void drawControlPoints() {
 	//draw the control points for our CRSpline
 	glPointSize(10.0);
@@ -235,7 +239,7 @@ void drawControlPoints() {
 void drawVelocityPoints() {
 
 	//draw the control points for our CRSpline
-	glPointSize(10.0);
+	glPointSize(8.0);
 	glColor3f(1.0, 0.0, 1.0);
 	glBegin(GL_POINTS);
 	for (vector<vec3>::size_type i = 0; i != vps.size(); i++) {
@@ -281,7 +285,17 @@ void display(void) {
  */
 int selectPoint(float xp, float yp) {
 	for (vector<vec3>::size_type i = 0; i != cps.size(); i++) {
-		if (fabs(xp - cps[i].x) < 0.2 && fabs(yp - cps[i].y) < 0.2) {
+		if (fabs(xp - cps[i].x) < 0.02 && fabs(yp - cps[i].y) < 0.02) {
+			printf("index: %d\n", i);
+			return i;
+		}
+	}
+	return -1;
+}
+
+int selectVelPoint(float xp, float yp) {
+	for (vector<vec3>::size_type i = 0; i != vps.size(); i++) {
+		if (fabs(xp - vps[i].x) < 0.2 && fabs(yp - vps[i].y) < 0.2) {
 			return i;
 		}
 	}
@@ -302,6 +316,91 @@ void mouseDrag(int xp, int yp) {
 	}
 	glutPostRedisplay();
 }
+
+void mouseDrag_2(int xp, int yp) {
+
+	float xWorld = (float)(xp*8.0)/windowWidth;
+	float yWorld = (float)(windowHeight-yp)*6.0/windowHeight;
+
+	if (ix > -1) {
+		vps[ix].x = xWorld;
+		vps[ix].y = yWorld;
+//		vps[ix].z = -1;
+
+		vspline.clear();
+		calculateVelSpline();
+	}
+	glutPostRedisplay();
+}
+
+vec3 transformClick2D(float x, float y) {
+
+	vec3 p;
+	p.x = (float) (x*8/windowWidth);
+	p.y = (float) (windowHeight - y)*6.0/windowHeight;
+
+	return p;
+
+
+}
+
+void drawAxis() {
+
+	vec3 v1 = transformClick2D((float)(20), (float) (600-20));
+	vec3 v2 = transformClick2D((float)(20), (float) (0));
+
+	vec3 h1 = v1;
+	vec3 h2 = transformClick2D((float)(800), (float)(600-20));
+
+	//draw y axis
+	glColor3f(0.0, 0.0, 1.0);
+	glBegin(GL_LINE_STRIP);
+
+		glVertex2f(v1.x, v1.y);
+		glVertex2f(v2.x, v2.y);
+
+	glEnd();
+
+	//draw x axis
+	glColor3f(0.0, 0.0, 1.0);
+	glBegin(GL_LINE_STRIP);
+
+		glVertex2f(h1.x, h1.y);
+		glVertex2f(h2.x, h2.y);
+
+	glEnd();
+
+}
+
+void initialize_vps() {
+
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT,viewport);
+
+	vec3 p1, p2, p3, pn;
+	p1.x = viewport[0] + xAxisOff;
+	p1.y = viewport[3] - yAxisOff;
+
+	p1 = transformClick2D(p1.x, p1.y);
+
+	p2.x = p1.x;
+	p2.y = p1.y;
+
+	pn.x = viewport[2] - xAxisOff;
+	pn.y = viewport[1] + yAxisOff;
+
+	pn = transformClick2D(pn.x, pn.y);
+
+	vps.push_back(p1);
+	vps.push_back(p2);
+	vps.push_back(pn);
+
+
+	drawVelocityPoints();
+	calculateVelSpline();
+
+}
+
 
 vec3 findWorldCoordinates(int xp, int yp) {
 
@@ -358,28 +457,52 @@ void mouse(int button, int state, int xp, int yp) {
 	glutPostRedisplay();
 }
 
+bool isMono(const vec3& location, const vec3& prevPoint, const vec3& endPoint) {
+	return (location.x > prevPoint.x && location.y > prevPoint.y)
+			&& (location.x <= endPoint.x && location.y <= endPoint.y);
+}
+
+void insertVelPoint(const vec3& location) {
+
+	int prevIndx = vps.size() - 2;
+	vec3 endPoint = vps.at(vps.size()-1);
+	vec3 prevPoint = vps.at(prevIndx);
+
+	//make sure it is monotonically increasing
+	if (isMono(location, prevPoint, endPoint)) {
+		//insert the point at the index one back from the end
+		vps.insert(vps.begin() + (vps.size() - 1), location);
+	}
+	vspline.clear();
+	calculateVelSpline();
+}
+
 void mouse_2(int button, int state, int xp, int yp) {
 
 
-	float xWorld = (float)(xp*8.0)/windowWidth;
-	float yWorld = (float)(windowHeight-yp)*6.0/windowHeight;
+	if (button == 3) { //wheel up
+		zoomFactor *= 1.1;
+	} else if (button == 4) { //wheel down
+		zoomFactor *= 0.9;
+	}
+
+
+	vec3 location = transformClick2D(xp,yp);
+
 	if(button==GLUT_LEFT_BUTTON && state ==GLUT_DOWN)
 	{
-
-		   vec3 newPoint;
-		   newPoint.x = xWorld;
-		   newPoint.y = yWorld;
-		   vps.push_back(newPoint);
-
+	   insertVelPoint(location);
 	}
-//	else if(button==GLUT_RIGHT_BUTTON && state ==GLUT_DOWN)  //Pick
-//			indx = picked(xWorld, yWorld);
+	else if(button==GLUT_RIGHT_BUTTON && state ==GLUT_DOWN) {
+			ix = selectVelPoint(location.x, location.y);
+			printf("ix: %d\n", ix);
+	}
+
 	glutPostRedisplay();
 
 	printf("x: %d, y: %d\n", xp, yp);
 
 }
-
 
 void keyboard(unsigned char key, int x, int y) {
 	if (key == 'c' || key == 'C')
@@ -395,9 +518,7 @@ void keyboard(unsigned char key, int x, int y) {
 	}
 
 	if(key == 'l' || key == 'L') {
-		splineLength();
-		printf("spline length: %f\n\n", splineLen);
-		kinematics();
+
 	}
 
 
@@ -427,7 +548,6 @@ void initialize_2(void) {
 	gluOrtho2D(0.0, 8.0, 0.0, 6.0);
 
 }
-
 
 void reshape(int wid, int hgt) {
 	windowWidth = wid;
@@ -459,7 +579,13 @@ void display_alt() {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
+		drawAxis();
+
 		drawVelocityPoints();
+
+		if(vps.size() > 3) {
+			drawVelSpline();
+		}
 
 		glDisable(GL_NORMALIZE);
 		glDisable(GL_DEPTH_TEST);
@@ -492,9 +618,13 @@ int main(int argc, char **argv) {
 	window_2 = glutCreateWindow("Velocity biz");
 	G308_SetLight_2();
 	initialize_2();
+
 	glutDisplayFunc(display_alt);
 	glutReshapeFunc(reshape_alt);
 	glutMouseFunc(mouse_2);
+	glutMotionFunc(mouseDrag_2);
+
+	initialize_vps();
 
 
 	glutMainLoop();
