@@ -30,13 +30,16 @@ vector<vec3> spline; //stores all of the points that construct the spline
 vector<vec3> vps; //store control points for velocity curve
 vector<vec3> vspline; //store all of the points that construct the velocity spline
 
-vector<float> distList;
+vector<float> segList;
 vector<float> uList;
 
 int xAxisOff = 20;
 int yAxisOff = 20;
 
-float splineLen= 0.0f;
+float splineLen = 0.0f;
+float vsplineLen = 0.0f;
+
+float distAlong;
 
 int numPoints = 50;
 int windowWidth = 800, windowHeight = 600;
@@ -44,6 +47,7 @@ int windowWidth = 800, windowHeight = 600;
 
 int ix = -1; //index
 int splineIndex = 0;
+int vsplineIndex = 0;
 const float DEG2RAD = 3.14159 / 180;
 
 int window_1;
@@ -51,15 +55,20 @@ int window_2;
 
 vec3 findWorldCoordinates(int, int);
 void drawCircle(float);
+void drawVelCircle(float);
 void G308_SetLight();
 void drawSpline();
 void calculateSpline();
+float calculateVelDist(int, int);
+float calculateDist(int, int);
+void calculateSplineLength();
 vec3 calculateCMRPoint(vec3, vec3, vec3, vec3, float);
 void drawControlPoints();
 void display();
 int selectPoint(float, float);
 void mouseDrag(int, int);
 void initialize_vps();
+void redisplay();
 
 
 /*
@@ -77,12 +86,29 @@ void drawCircle(float radius) {
 
 		glTranslatef(spline[splineIndex].x, spline[splineIndex].y, -1);
 
-		glutSolidSphere(0.03, 100, 100);
+		glutSolidSphere(radius, 100, 100);
 
 	}
 
 	glPopMatrix();
 }
+
+void drawVelCircle(float radius) {
+
+	glPushMatrix();
+	if(vps.size() > 3) {
+
+		glTranslatef(vspline[vsplineIndex].x, vspline[vsplineIndex].y, 0);
+		glutSolidSphere(radius, 100, 100);
+
+	}
+	glPopMatrix();
+
+
+}
+
+
+
 // Set View Position
 void G308_SetLight() {
 	float direction[] = { 200, 200, -10.0f, 1.0f };
@@ -108,14 +134,6 @@ void G308_SetLight_2() {
 
 	glEnable(GL_LIGHT1);
 }
-
-
-
-
-
-
-
-
 
 vec3 calculateCMRPoint(vec3 a, vec3 b, vec3 c, vec3 d, float t) {
 
@@ -144,6 +162,7 @@ void calculateVelSpline() {
 
 	if (vps.size() > 3) {
 
+
 		for (vector<vec3>::size_type i = 1; i != vps.size() - 2; i++) {
 			for (int k = 0; k < numPoints; k++) {
 				//50 points
@@ -168,6 +187,8 @@ void calculateSpline() {
 			for (int k = 0; k < numPoints; k++) {
 				//50 points
 				float t = k * 0.02; //Interpolation parameter
+
+
 
 				vec3 splinePoint = calculateCMRPoint(cps[i-1], cps[i], cps[i+1], cps[i+2], t);
 
@@ -212,8 +233,8 @@ void drawVelSpline() {
  */
 float calculateDist(int indx, int nextIndx) {
 
-	vec3 pos1 = cps[indx]; // start position
-	vec3 pos2 = cps[nextIndx]; // end position
+	vec3 pos1 = spline[indx]; // start position
+	vec3 pos2 = spline[nextIndx]; // end position
 
 	float deltaX = pos2.x - pos1.x;
 	float deltaY = pos2.y - pos1.y;
@@ -223,6 +244,25 @@ float calculateDist(int indx, int nextIndx) {
 	return dist;
 
 }
+
+/*
+ * For calculating the chord length of an arc
+ */
+float calculateVelDist(int indx, int nextIndx) {
+
+	vec3 pos1 = vspline[indx]; // start position
+	vec3 pos2 = vspline[nextIndx]; // end position
+
+	float deltaX = abs(pos2.x - pos1.x);
+	float deltaY = abs(pos2.y - pos1.y);
+
+	float dist = sqrt((deltaX*deltaX) + (deltaY*deltaY));
+
+	return dist;
+
+}
+
+
 
 
 void drawControlPoints() {
@@ -451,6 +491,9 @@ void mouse(int button, int state, int xp, int yp) {
 		//recalculate the spline as it has new points
 		spline.clear();
 		calculateSpline();
+		if(cps.size() > 3) {
+			calculateSplineLength();
+		}
 
 	} else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)  //Pick
 		ix = selectPoint((float) worldCoords.x, (float) worldCoords.y);
@@ -492,6 +535,7 @@ void mouse_2(int button, int state, int xp, int yp) {
 	if(button==GLUT_LEFT_BUTTON && state ==GLUT_DOWN)
 	{
 	   insertVelPoint(location);
+
 	}
 	else if(button==GLUT_RIGHT_BUTTON && state ==GLUT_DOWN) {
 			ix = selectVelPoint(location.x, location.y);
@@ -504,20 +548,129 @@ void mouse_2(int button, int state, int xp, int yp) {
 
 }
 
+void calculateDistAlong() {
+	float highest = vspline[vspline.size() - 1].y;
+	float p = vspline[vsplineIndex].y / highest;
+	printf("p: %f\n", p);
+	distAlong = p * splineLen;
+	printf("dist along spline: %f\n", distAlong);
+}
+
 void keyboard(unsigned char key, int x, int y) {
 	if (key == 'c' || key == 'C')
 		cps.clear();
 
 	if (key == 's' || key == 'S') {
 
-		if (splineIndex <= spline.size()) {
-			splineIndex++;
+//			calculateDistAlong();
+//			float d = distAlong;
+//			//search through spline vector comparing expected value
+//			//to value at index.
+//
+//			int theIndex;
+//
+//			for (vector<vec3>::size_type i = 0; i != segList.size(); i++) {
+//
+//				if(segList[i] > d) {
+//					theIndex = i;
+//					break;
+//				}
+//
+//			}
+//
+//			splineIndex = theIndex;
+
+
+	}
+
+	if(key == 'l' || key == 'L') {
+
+		calculateSplineLength();
+
+
+
+
+	}
+
+
+
+	glutPostRedisplay();
+}
+
+void calculateSplineLength() {
+
+	segList.clear();
+	splineLen = 0;
+//	segList.push_back(splineLen);
+
+
+	int i = 1;
+	while(i<spline.size() - 2) {
+//		printf("x: %f, y: %f\n", cps[i].x, cps[i].y);
+
+		splineLen += calculateDist(i, i + 1);
+		printf("length: %f\n", splineLen);
+		segList.push_back(splineLen);
+		i++;
+	}
+
+//	for (vector<float>::size_type i = 0; i != segList.size(); i++) {
+//
+//			printf("seg num %d: %f\n", segList[i]);
+//
+//	}
+
+
+}
+
+void calculateVelLength() {
+	vsplineLen = 0;
+	int i = 1;
+	while (i < vps.size() - 2) {
+		printf("x: %f, y: %f\n", vps[i].x, vps[i].y);
+		vsplineLen += calculateVelDist(i, i + 1);
+		i += 1;
+	}
+	printf("v spline len: %f\n", vsplineLen);
+}
+
+void keyboard_2(unsigned char key, int x, int y) {
+	if (key == 'c' || key == 'C')
+		vps.clear();
+
+	if (key == 's' || key == 'S') {
+
+		if (vsplineIndex <= vspline.size()) {
+			vsplineIndex++;
+
+	//		calculateObjPos();
+			calculateDistAlong();
+			float d = distAlong;
+			//search through spline vector comparing expected value
+			//to value at index.
+
+			int theIndex;
+
+			for (vector<vec3>::size_type i = 0; i != segList.size(); i++) {
+
+				if(segList[i] > d) {
+					theIndex = i;
+					break;
+				}
+
+			}
+
+			splineIndex = theIndex;
+			redisplay();
+
 		} else {
-			splineIndex = 0;
+			vsplineIndex = 0;
 		}
 	}
 
 	if(key == 'l' || key == 'L') {
+
+		calculateVelLength();
 
 	}
 
@@ -587,6 +740,8 @@ void display_alt() {
 			drawVelSpline();
 		}
 
+		drawVelCircle(0.05);
+
 		glDisable(GL_NORMALIZE);
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_LIGHTING);
@@ -594,6 +749,19 @@ void display_alt() {
 
 		glutSwapBuffers();
 		glFlush();
+
+}
+
+void redisplay() {
+
+	int currentWindow = glutGetWindow();
+	glutSetWindow(window_1);
+	glutPostRedisplay();
+	glutSetWindow(window_2);
+	glutPostRedisplay();
+	glutSetWindow(currentWindow);
+
+
 
 }
 
@@ -623,6 +791,7 @@ int main(int argc, char **argv) {
 	glutReshapeFunc(reshape_alt);
 	glutMouseFunc(mouse_2);
 	glutMotionFunc(mouseDrag_2);
+	glutKeyboardFunc(keyboard_2);
 
 	initialize_vps();
 
