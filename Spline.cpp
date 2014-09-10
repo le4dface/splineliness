@@ -118,10 +118,10 @@ void Spline::insertBetween(const vec3& point) {
 	vec3 endPoint = cps.at(cps.size() - 1);
 	vec3 prevPoint = cps.at(prevIndx);
 	//make sure it is monotonically increasing
-//	if (isMono(point, prevPoint, endPoint)) {
-//		//insert the point at the index one back from the end
+	if (isMono(point, prevPoint, endPoint)) {
+	//insert the point at the index one back from the end
 	cps.insert(cps.begin() + (cps.size() - 1), point);
-//	}
+	}
 	spline.clear();
 	calculateSpline();
 }
@@ -138,8 +138,8 @@ int Spline::selectPoint(float xp, float yp) {
 }
 
 //enforce monotonic
-bool Spline::isMono(const vec3& location, const vec3& prevPoint,
-		const vec3& endPoint) {
+bool Spline::isMono(const vec3& location, const vec3& prevPoint, const vec3& endPoint) {
+
 	return (location.x > prevPoint.x && location.y > prevPoint.y)
 			&& (location.x <= endPoint.x && location.y <= endPoint.y);
 }

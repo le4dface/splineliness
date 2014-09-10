@@ -338,15 +338,10 @@ void mouse_2(int button, int state, int xp, int yp) {
 
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 
-		vec3 newPoint;
-		newPoint.x = (float) worldCoords.x;
-		newPoint.y = (float) worldCoords.y;
-		newPoint.z = (float) worldCoords.z;
-
 		vector<vec3> *ctrlPoints = curveSpline.getControlPoints();
 		vector<vec3> *splinePoints = curveSpline.getSpline();
 
-		curveSpline.insertBetween(newPoint);
+		curveSpline.insertBetween(worldCoords);
 		//recalculate the spline as it has new points
 		splinePoints->clear();
 		curveSpline.calculateSpline();
@@ -355,26 +350,29 @@ void mouse_2(int button, int state, int xp, int yp) {
 			curveSpline.calculateArcLengths();
 		}
 
-	} else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)  //Pick
+	} else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
 		ix = curveSpline.selectPoint((float) worldCoords.x,
 				(float) worldCoords.y);
+	}
 	glutPostRedisplay();
 
 }
 
 void mouseDrag_2(int xp, int yp) {
-
-	vec3 worldCoordinates = findWorldCoordinates(xp, yp);
+	vec3 worldCoords = findWorldCoordinates(xp, yp);
 	vector<vec3> *ctrlPoints = curveSpline.getControlPoints();
-	vector<vec3> *spline = curveSpline.getSpline();
+	vector<vec3> *splinePoints = curveSpline.getSpline();
 
 	if (ix > -1) {
+		int prevIndx = ctrlPoints->size() - 2;
+		vec3 endPoint = ctrlPoints->at(ctrlPoints->size() - 1);
+		vec3 prevPoint = ctrlPoints->at(prevIndx);
 
-		ctrlPoints->at(ix).x = worldCoordinates.x;
-		ctrlPoints->at(ix).y = worldCoordinates.y;
+		ctrlPoints->at(ix).x = worldCoords.x;
+		ctrlPoints->at(ix).y = worldCoords.y;
 		ctrlPoints->at(ix).z = -1;
 
-		spline->clear();
+		splinePoints->clear();
 		curveSpline.calculateSpline();
 
 	}
