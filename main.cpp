@@ -36,13 +36,11 @@ float distanceCovered; //distance obj is along spline
 
 Spline animSpline, curveSpline;
 
-
-
 /*
  * utilities
  */
 vec3 findWorldCoordinates(int, int);
-void drawCircle(Spline &s,float);
+void drawCircle(Spline &s, float);
 vec3 transformClick2D(float, float);
 void redisplay(); //switch focus between windows
 void calculateProgress();
@@ -99,7 +97,7 @@ void display(void) {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	drawCircle(animSpline,0.01);
+	drawCircle(animSpline, 0.01);
 	//draw the control points for our CRSpline
 	animSpline.drawControlPoints();
 	vector<vec3> *ctrlPoints = animSpline.getControlPoints();
@@ -128,7 +126,7 @@ void initialize(void) {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(G308_FOVY, (double) windowWidth / (double) windowHeight,
-			G308_ZNEAR_3D, G308_ZFAR_3D);
+	G308_ZNEAR_3D, G308_ZFAR_3D);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -158,12 +156,13 @@ void mouse(int button, int state, int xp, int yp) {
 		splinePoints->clear();
 		animSpline.calculateSpline();
 
-		if(ctrlPoints->size() > 3) {
+		if (ctrlPoints->size() > 3) {
 			animSpline.calculateArcLengths();
 		}
 
 	} else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)  //Pick
-		ix = animSpline.selectPoint((float) worldCoords.x, (float) worldCoords.y);
+		ix = animSpline.selectPoint((float) worldCoords.x,
+				(float) worldCoords.y);
 	glutPostRedisplay();
 }
 
@@ -197,7 +196,6 @@ void keyboard(unsigned char key, int x, int y) {
  * End Animation Window
  */
 
-
 /*
  * Begin Curve Window
  */
@@ -216,18 +214,18 @@ void G308_SetLight_2() {
 
 void drawAxis() {
 
-	vec3 v1 = findWorldCoordinates(20,(600-20));
+	vec3 v1 = findWorldCoordinates(20, (600 - 20));
 	vec3 v2 = findWorldCoordinates(20, 0);
 
 	vec3 h1 = v1;
-	vec3 h2 = findWorldCoordinates(800,(600-20));
+	vec3 h2 = findWorldCoordinates(800, (600 - 20));
 
 	//draw y axis
 	glColor3f(1.0, 1.0, 1.0);
 	glBegin(GL_LINE_STRIP);
 
-		glVertex3f(v1.x, v1.y, -1);
-		glVertex3f(v2.x, v2.y, -1);
+	glVertex3f(v1.x, v1.y, -1);
+	glVertex3f(v2.x, v2.y, -1);
 
 	glEnd();
 
@@ -235,8 +233,8 @@ void drawAxis() {
 	glColor3f(1.0, 1.0, 1.0);
 	glBegin(GL_LINE_STRIP);
 
-		glVertex3f(h1.x, h1.y, -1);
-		glVertex3f(h2.x, h2.y, -1);
+	glVertex3f(h1.x, h1.y, -1);
+	glVertex3f(h2.x, h2.y, -1);
 
 	glEnd();
 
@@ -246,7 +244,7 @@ void initialize_vps() {
 
 	vector<vec3> *ctrlPoints = curveSpline.getControlPoints();
 	GLint viewport[4];
-	glGetIntegerv(GL_VIEWPORT,viewport);
+	glGetIntegerv(GL_VIEWPORT, viewport);
 
 	vec3 p1, p2, p3, pn;
 	p1.x = viewport[0] + xAxisOff;
@@ -276,7 +274,7 @@ void initialize_2(void) {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(G308_FOVY, (double) windowWidth / (double) windowHeight,
-			G308_ZNEAR_3D, G308_ZFAR_3D);
+	G308_ZNEAR_3D, G308_ZFAR_3D);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
@@ -304,11 +302,11 @@ void display_alt() {
 	drawAxis();
 	curveSpline.drawControlPoints();
 
-	if(ctrlPoints->size() > 3) {
+	if (ctrlPoints->size() > 3) {
 		curveSpline.drawSpline();
 	}
 
-	drawCircle(curveSpline,0.01);
+	drawCircle(curveSpline, 0.01);
 
 	glDisable(GL_NORMALIZE);
 	glDisable(GL_DEPTH_TEST);
@@ -353,19 +351,20 @@ void mouse_2(int button, int state, int xp, int yp) {
 		splinePoints->clear();
 		curveSpline.calculateSpline();
 
-		if(ctrlPoints->size() > 3) {
+		if (ctrlPoints->size() > 3) {
 			curveSpline.calculateArcLengths();
 		}
 
 	} else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)  //Pick
-		ix = curveSpline.selectPoint((float) worldCoords.x, (float) worldCoords.y);
+		ix = curveSpline.selectPoint((float) worldCoords.x,
+				(float) worldCoords.y);
 	glutPostRedisplay();
 
 }
 
 void mouseDrag_2(int xp, int yp) {
 
-	vec3 worldCoordinates = findWorldCoordinates(xp,yp);
+	vec3 worldCoordinates = findWorldCoordinates(xp, yp);
 	vector<vec3> *ctrlPoints = curveSpline.getControlPoints();
 	vector<vec3> *spline = curveSpline.getSpline();
 
@@ -403,13 +402,13 @@ void keyboard_2(unsigned char key, int x, int y) {
 			//to value at index.
 			int theIndex;
 			for (vector<vec3>::size_type i = 0; i != segList->size(); i++) {
-				if(segList->at(i) > d) {
+				if (segList->at(i) > d) {
 					theIndex = i;
 					break;
 				}
 			}
 			animSpline.setSplineIndex(theIndex);
-			curveSpline.setSplineIndex(velIndex+1);
+			curveSpline.setSplineIndex(velIndex + 1);
 			calculateProgress();
 
 			redisplay();
@@ -420,8 +419,6 @@ void keyboard_2(unsigned char key, int x, int y) {
 		}
 	}
 
-
-
 	glutPostRedisplay();
 }
 
@@ -431,7 +428,6 @@ void keyboard_2(unsigned char key, int x, int y) {
  * End Curve Window
  */
 
-
 /*
  * Begin Utilities
  */
@@ -439,12 +435,12 @@ void keyboard_2(unsigned char key, int x, int y) {
 void drawCircle(Spline &s, float r) {
 	vector<vec3>* ctrlPoints = s.getControlPoints();
 	glPushMatrix();
-		if (ctrlPoints->size() > 3) {
-			vector<vec3> *splinePoints = s.getSpline();
-			int index = s.getSplineIndex();
-			glTranslatef(splinePoints->at(index).x, splinePoints->at(index).y, -1);
-			glutSolidSphere(r, 100, 100);
-		}
+	if (ctrlPoints->size() > 3) {
+		vector<vec3> *splinePoints = s.getSpline();
+		int index = s.getSplineIndex();
+		glTranslatef(splinePoints->at(index).x, splinePoints->at(index).y, -1);
+		glutSolidSphere(r, 100, 100);
+	}
 	glPopMatrix();
 }
 
@@ -453,20 +449,20 @@ void calculateProgress() {
 	int index = curveSpline.getSplineIndex();
 	vector<vec3> *velSpline = curveSpline.getSpline();
 
-	float height = abs(velSpline->at(velSpline->size() - 1).y - velSpline->at(0).y);
-	float current = abs(velSpline->at(velSpline->size() - 1).y - velSpline->at(index).y);
+	float height = abs(
+			velSpline->at(velSpline->size() - 1).y - velSpline->at(0).y);
+	float current = abs(
+			velSpline->at(velSpline->size() - 1).y - velSpline->at(index).y);
 
 	float p = 1 - abs(current / height);
 	printf("percent: %f\n", p);
 	distanceCovered = abs(p * animSpline.getSplineLength());
 }
 
-
-
 vec3 transformClick2D(float x, float y) {
 	vec3 p;
-	p.x = (float) (x*8/windowWidth);
-	p.y = (float) (windowHeight - y)*6.0/windowHeight;
+	p.x = (float) (x * 8 / windowWidth);
+	p.y = (float) (windowHeight - y) * 6.0 / windowHeight;
 	p.z = -1;
 
 	return p;

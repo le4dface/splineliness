@@ -35,14 +35,13 @@ void Spline::calculateSpline() {
 			for (int k = 0; k < numPoints; k++) {
 				float interp = (float) 1 / (float) numPoints;
 				float t = k * interp; //Interpolation parameter
-				vec3 splinePoint = calculateCMRPoint(cps[i-1], cps[i], cps[i+1], cps[i+2], t);
+				vec3 splinePoint = calculateCMRPoint(cps[i - 1], cps[i],
+						cps[i + 1], cps[i + 2], t);
 				spline.push_back(splinePoint);
 			}
 		}
 	}
 }
-
-
 
 //calculates dist between points
 float Spline::calculateDist(int indx, int nextIndx) {
@@ -53,10 +52,9 @@ float Spline::calculateDist(int indx, int nextIndx) {
 	float deltaX = pos2.x - pos1.x;
 	float deltaY = pos2.y - pos1.y;
 
-	float dist = sqrt(pow(deltaX,2) + pow(deltaY,2));
+	float dist = sqrt(pow(deltaX, 2) + pow(deltaY, 2));
 
 	return dist;
-
 
 }
 
@@ -67,7 +65,7 @@ void Spline::calculateArcLengths() {
 	splineLength = 0;
 	int i = 1;
 	segList.push_back(splineLength);
-	while(i<spline.size() - 2) {
+	while (i < spline.size() - 2) {
 		splineLength += calculateDist(i, i + 1);
 		segList.push_back(splineLength);
 		i++;
@@ -79,10 +77,9 @@ vec3 Spline::calculateCMRPoint(vec3 a, vec3 b, vec3 c, vec3 d, float t) {
 	float splineX, splineY;
 	vec3 splinePoint;
 
-	splineX =
-			b.x + 0.5 * t * (-a.x + c.x) +
-			pow(t, 2) * (a.x - 2.5 * b.x + 2 * c.x - 0.5 * d.x) +
-			pow(t, 3) * (-0.5 * a.x + 1.5 * b.x - 1.5 * c.x + 0.5 * d.x);
+	splineX = b.x + 0.5 * t * (-a.x + c.x)
+			+ pow(t, 2) * (a.x - 2.5 * b.x + 2 * c.x - 0.5 * d.x)
+			+ pow(t, 3) * (-0.5 * a.x + 1.5 * b.x - 1.5 * c.x + 0.5 * d.x);
 
 	splineY = b.y + 0.5 * t * (-a.y + c.y)
 			+ pow(t, 2) * (a.y - 2.5 * b.y + 2 * c.y - 0.5 * d.y)
@@ -118,12 +115,12 @@ void Spline::drawSpline() {
 
 void Spline::insertBetween(const vec3& point) {
 	int prevIndx = cps.size() - 2;
-	vec3 endPoint = cps.at(cps.size()-1);
+	vec3 endPoint = cps.at(cps.size() - 1);
 	vec3 prevPoint = cps.at(prevIndx);
 	//make sure it is monotonically increasing
 //	if (isMono(point, prevPoint, endPoint)) {
 //		//insert the point at the index one back from the end
-		cps.insert(cps.begin() + (cps.size() - 1), point);
+	cps.insert(cps.begin() + (cps.size() - 1), point);
 //	}
 	spline.clear();
 	calculateSpline();
@@ -141,7 +138,8 @@ int Spline::selectPoint(float xp, float yp) {
 }
 
 //enforce monotonic
-bool Spline::isMono(const vec3& location, const vec3& prevPoint, const vec3& endPoint) {
+bool Spline::isMono(const vec3& location, const vec3& prevPoint,
+		const vec3& endPoint) {
 	return (location.x > prevPoint.x && location.y > prevPoint.y)
 			&& (location.x <= endPoint.x && location.y <= endPoint.y);
 }

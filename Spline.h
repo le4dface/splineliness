@@ -23,17 +23,15 @@ class Spline {
 
 private:
 
-vector<vec3> cps; //stores the control points
-vector<vec3> spline; //stores all of the points that construct the spline
-vector<float> segList; //list of arc lengths at increasing position on the spline
-float splineLength; //approximate length of the spline
-int numPoints; //number of points between control points
-int splineIndex; //current index of spline
+	vector<vec3> cps; //stores the control points
+	vector<vec3> spline; //stores all of the points that construct the spline
+	vector<float> segList; //list of arc lengths at increasing position on the spline
+	float splineLength; //approximate length of the spline
+	int numPoints; //number of points between control points
+	int splineIndex; //current index of spline
 
-
-
-float calculateDist(int,int); //approximate length of an arc segment
-vec3 calculateCMRPoint(vec3, vec3, vec3, vec3, float);
+	float calculateDist(int, int); //approximate length of an arc segment
+	vec3 calculateCMRPoint(vec3, vec3, vec3, vec3, float);
 
 public:
 	void calculateArcLengths(); //
