@@ -4,13 +4,16 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../spline.cpp 
+../Spline.cpp \
+../main.cpp 
 
 OBJS += \
-./spline.o 
+./Spline.o \
+./main.o 
 
 CPP_DEPS += \
-./spline.d 
+./Spline.d \
+./main.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
