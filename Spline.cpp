@@ -61,14 +61,16 @@ float Spline::calculateDist(int indx, int nextIndx) {
 //find the length of the spline, and create arc length table
 void Spline::calculateArcLengths() {
 
-	segList.clear();
-	splineLength = 0;
-	int i = 1;
-	segList.push_back(splineLength);
-	while (i < spline.size() - 2) {
-		splineLength += calculateDist(i, i + 1);
+	if(cps.size() > 3) {
+		segList.clear();
+		splineLength = 0;
+		unsigned int i = 1;
 		segList.push_back(splineLength);
-		i++;
+		while (i < spline.size() - 2) {
+			splineLength += calculateDist(i, i + 1);
+			segList.push_back(splineLength);
+			i++;
+		}
 	}
 }
 
@@ -114,13 +116,13 @@ void Spline::drawSpline() {
 }
 
 void Spline::insertBetween(const vec3& point) {
-	int prevIndx = cps.size() - 2;
-	vec3 endPoint = cps.at(cps.size() - 1);
+	int prevIndx = cps.size() - 3;
+	vec3 endPoint = cps.at(cps.size() - 2);
 	vec3 prevPoint = cps.at(prevIndx);
 	//make sure it is monotonically increasing
 	if (isMono(point, prevPoint, endPoint)) {
 	//insert the point at the index one back from the end
-	cps.insert(cps.begin() + (cps.size() - 1), point);
+	cps.insert(cps.begin() + (cps.size() - 2), point);
 	}
 	spline.clear();
 	calculateSpline();

@@ -11,6 +11,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <map>
+
 // My definition
 #include "include/define.h"
 #include "Spline.h"
@@ -35,6 +36,8 @@ int window_2; //curve map window
 float distanceCovered; //distance obj is along spline
 
 Spline animSpline, curveSpline;
+
+bool animating = false;
 
 /*
  * utilities
@@ -61,6 +64,8 @@ void keyboard(unsigned char, int, int);
 void drawAxis();
 void initialize_vps();
 void initialize_2();
+
+void animateObject(int, vector<vec3>*,vector<float>*);
 void G308_SetLight_2();
 void reshape_alt(int, int);
 void display_alt();
@@ -85,6 +90,11 @@ void G308_SetLight() {
 }
 
 void display(void) {
+
+	vector<float> *segList = animSpline.getSegList();
+	int velIndex = curveSpline.getSplineIndex();
+	vector<vec3> *velSpline = curveSpline.getSpline();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE); //enabled GL normalize to automagically normalize vectors
@@ -101,9 +111,14 @@ void display(void) {
 	//draw the control points for our CRSpline
 	animSpline.drawControlPoints();
 	vector<vec3> *ctrlPoints = animSpline.getControlPoints();
+
 	//need at least 4 control points
 	if (ctrlPoints->size() > 3) {
 		animSpline.drawSpline();
+	}
+
+	if(animating) {
+		animateObject(velIndex, velSpline, segList);
 	}
 
 	glDisable(GL_NORMALIZE);
@@ -113,6 +128,7 @@ void display(void) {
 
 	glutSwapBuffers();
 	glFlush();
+
 }
 
 void reshape(int wid, int hgt) {
@@ -154,11 +170,10 @@ void mouse(int button, int state, int xp, int yp) {
 		ctrlPoints->push_back(worldCoords);
 		//recalculate the spline as it has new points
 		splinePoints->clear();
-		animSpline.calculateSpline();
 
-		if (ctrlPoints->size() > 3) {
-			animSpline.calculateArcLengths();
-		}
+		animSpline.calculateSpline();
+		animSpline.calculateArcLengths();
+
 
 	} else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)  //Pick
 		ix = animSpline.selectPoint((float) worldCoords.x,
@@ -262,6 +277,7 @@ void initialize_vps() {
 
 	ctrlPoints->push_back(p1);
 	ctrlPoints->push_back(p2);
+	ctrlPoints->push_back(pn);
 	ctrlPoints->push_back(pn);
 
 	curveSpline.drawControlPoints();
@@ -379,43 +395,50 @@ void mouseDrag_2(int xp, int yp) {
 	glutPostRedisplay();
 }
 
+void animateObject(int velIndex, vector<vec3>* velSpline,
+		vector<float>* segList) {
+	if (velIndex < velSpline->size() - 1) {
+		float d = distanceCovered;
+		//search through spline vector comparing expected value
+		//to value at index.
+		int theIndex;
+		for (vector<vec3>::size_type i = 0; i != segList->size(); i++) {
+			if (segList->at(i) > d) {
+				theIndex = i;
+				break;
+			}
+		}
+		animSpline.setSplineIndex(theIndex);
+		curveSpline.setSplineIndex(velIndex + 1);
+		calculateProgress();
+		redisplay();
+	} else {
+		animSpline.setSplineIndex(0);
+		curveSpline.setSplineIndex(0);
+	}
+}
+
 void keyboard_2(unsigned char key, int x, int y) {
 
 	vector<vec3> *ctrlPoints = curveSpline.getControlPoints();
+	vector<vec3> *objSpline = animSpline.getSpline();
 	vector<vec3> *velSpline = curveSpline.getSpline();
-	vector<float> *segList = animSpline.getSegList();
 
-	int velIndex = curveSpline.getSplineIndex();
 
 	if (key == 'c' || key == 'C') {
 		ctrlPoints->clear();
 		initialize_vps();
 	}
 
-	if (key == 's' || key == 'S') {
+	if(key == 'a' || key == 'A') {
 
-		if (velIndex < velSpline->size() - 1) {
-			float d = distanceCovered;
-			//search through spline vector comparing expected value
-			//to value at index.
-			int theIndex;
-			for (vector<vec3>::size_type i = 0; i != segList->size(); i++) {
-				if (segList->at(i) > d) {
-					theIndex = i;
-					break;
-				}
-			}
-			animSpline.setSplineIndex(theIndex);
-			curveSpline.setSplineIndex(velIndex + 1);
-			calculateProgress();
+		if(!animating)
+			animating = true;
+		else
+			animating = false;
 
-			redisplay();
-
-		} else {
-			animSpline.setSplineIndex(0);
-			curveSpline.setSplineIndex(0);
-		}
 	}
+
 
 	glutPostRedisplay();
 }
@@ -432,10 +455,10 @@ void keyboard_2(unsigned char key, int x, int y) {
 
 void drawCircle(Spline &s, float r) {
 	vector<vec3>* ctrlPoints = s.getControlPoints();
+	int index = s.getSplineIndex();
+	vector<vec3> *splinePoints = s.getSpline();
 	glPushMatrix();
-	if (ctrlPoints->size() > 3) {
-		vector<vec3> *splinePoints = s.getSpline();
-		int index = s.getSplineIndex();
+	if (ctrlPoints->size() > 3 && index < splinePoints->size() - 2) {
 		glTranslatef(splinePoints->at(index).x, splinePoints->at(index).y, -1);
 		glutSolidSphere(r, 100, 100);
 	}
@@ -453,7 +476,7 @@ void calculateProgress() {
 			velSpline->at(velSpline->size() - 1).y - velSpline->at(index).y);
 
 	float p = 1 - abs(current / height);
-	printf("percent: %f\n", p);
+//	printf("percent: %f\n", p);
 	distanceCovered = abs(p * animSpline.getSplineLength());
 }
 
@@ -501,6 +524,7 @@ void redisplay() {
 	glutSetWindow(window_2);
 	glutPostRedisplay();
 	glutSetWindow(currentWindow);
+	glutPostRedisplay();
 
 }
 
@@ -519,7 +543,7 @@ int main(int argc, char **argv) {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitWindowPosition(0, 0);
-	window_1 = glutCreateWindow("CRSpline biz");
+	window_1 = glutCreateWindow("Object To Animate");
 	G308_SetLight();
 	initialize();
 	glutDisplayFunc(display);
@@ -528,7 +552,8 @@ int main(int argc, char **argv) {
 	glutMotionFunc(mouseDrag);
 	glutKeyboardFunc(keyboard);
 
-	window_2 = glutCreateWindow("Velocity biz");
+
+	window_2 = glutCreateWindow("Velocity Curve Map ( Y = distance, X = time)");
 	G308_SetLight_2();
 	initialize_2();
 
@@ -537,6 +562,7 @@ int main(int argc, char **argv) {
 	glutMouseFunc(mouse_2);
 	glutMotionFunc(mouseDrag_2);
 	glutKeyboardFunc(keyboard_2);
+	glutIdleFunc(redisplay);
 
 	initialize_vps();
 
